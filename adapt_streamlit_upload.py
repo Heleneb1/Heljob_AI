@@ -11,6 +11,8 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain.retrievers.multi_query import MultiQueryRetriever
 import ollama
 import fitz  # Bibliothèque PyMuPDF pour lire les fichiers PDF pip install PyMuPDF
+import tempfile
+
 
 # streamlit run adapt_streamlit_upload.py Pour ouvrir en localhost
 
@@ -118,16 +120,30 @@ def create_retriever(vector_db, llm, cv_data, job_offer):
     logging.info("Retriever créé.")
     return retriever
 
+from langdetect import detect
+
+
+
 # Fonction pour adapter un CV à une offre d'emploi
 def adapter_cv_ollama(cv_data, job_offer):
     """Adapter le CV avec Ollama."""
+    
     try:
-        prompt = f"""
-        Voici mon CV structuré : {cv_data}
-        Voici l'offre d'emploi : {job_offer}
-        Propose des modifications pertinentes pour que mon CV corresponde mieux à cette offre.
-        Fournis un CV complet, passant les ATS, adapté et mis à jour pour correspondre au mieux à l'offre en fonction de mon parcours.
-        """
+        lang = detect(job_offer)  # Retourne 'en' pour l'anglais, 'fr' pour le français, etc.
+        if lang == "en":
+            prompt = f"""
+            Here is my structured CV: {cv_data}
+            Here is the job offer: {job_offer}
+            Suggest relevant changes to make my resume a better match for this offer.
+            Provided a complete CV, passing the ATS, adapted and updated to best match the offer according to my background.
+                        """
+        else:
+             prompt = f"""
+            Voici mon CV structuré : {cv_data}
+            Voici l'offre d'emploi : {job_offer}
+            Propose des modifications pertinentes pour que mon CV corresponde mieux à cette offre.
+            Fournis un CV complet, passant les ATS, adapté et mis à jour pour correspondre au mieux à l'offre en fonction de mon parcours.
+                        """
         logging.info("Début de l'adaptation du CV...")
         
         # Envoi de la requête au modèle et récupération de la réponse
@@ -147,11 +163,20 @@ def adapter_cv_ollama(cv_data, job_offer):
 def generer_lettre_motivation_ollama(cv_data, job_offer):
     """Générer une lettre de motivation avec Ollama."""
     try:
-        prompt = f"""
-        Voici mon CV structuré : {cv_data}
-        Voici l'offre d'emploi : {job_offer}
-        Rédige une lettre de motivation professionnelle adaptée, parle de l'entreprise qui recrute et pourquoi mes valeurs y correspondent
-        """
+        lang = detect(job_offer)  # Retourne 'en' pour l'anglais, 'fr' pour le français, etc.
+        if lang == "en":
+            prompt = f"""
+            Here is my structured CV: {cv_data}
+            Here is the job offer: {job_offer}
+            Write a professional cover letter tailored to this job offer. Mention the recruiting company and explain how my values align with theirs. The cover letter should be in English.
+            """
+        else:
+            prompt = f"""
+            Voici mon CV structuré : {cv_data}
+            Voici l'offre d'emploi : {job_offer}
+            Rédige une lettre de motivation professionnelle adaptée. Parle de l'entreprise qui recrute et pourquoi mes valeurs y correspondent. La lettre doit être en français.
+            """
+
         logging.info("Début de la génération de la lettre de motivation...")
         
         # Envoi de la requête au modèle et récupération de la réponse
@@ -164,14 +189,27 @@ def generer_lettre_motivation_ollama(cv_data, job_offer):
         return None
 
 # Fonction pour sauvegarder du contenu dans un fichier
-def sauvegarder_fichier(contenu, nom_fichier):
-    """Sauvegarder le contenu dans un fichier."""
+# def sauvegarder_fichier(contenu, nom_fichier):
+#     """Sauvegarder le contenu dans un fichier."""
+#     try:
+#         with open(nom_fichier, "w", encoding="utf-8") as f:
+#             f.write(contenu)
+#         logging.info(f"Fichier {nom_fichier} sauvegardé avec succès.")
+#     except Exception as e:
+#         logging.error(f"Erreur lors de la sauvegarde du fichier : {e}")
+
+# Sauvegarde temporaire 
+def sauvegarder_fichier_temporaire(contenu):
+    """Sauvegarder le contenu dans un fichier temporaire."""
     try:
-        with open(nom_fichier, "w", encoding="utf-8") as f:
-            f.write(contenu)
-        logging.info(f"Fichier {nom_fichier} sauvegardé avec succès.")
+        with tempfile.NamedTemporaryFile(delete=False, mode="w", encoding="utf-8") as temp_file:
+            temp_file.write(contenu)
+            temp_filename = temp_file.name  # Retourne le nom du fichier temporaire
+        logging.info(f"Fichier temporaire sauvegardé avec succès : {temp_filename}")
+        return temp_filename
     except Exception as e:
-        logging.error(f"Erreur lors de la sauvegarde du fichier : {e}")
+        logging.error(f"Erreur lors de la sauvegarde du fichier temporaire : {e}")
+        return None
 
 def create_chain(retriever, llm):
     """Create the chain"""
@@ -203,7 +241,7 @@ def main():
     if "job_offer" not in st.session_state:
         st.session_state.job_offer = None
 
-    st.title("CV Assistant")
+    st.title("CV Assistant ☑️")
     st.sidebar.title("Menu")
     step = st.sidebar.radio("Étapes", ["Charger les données", "Adapter le CV", "Générer la lettre"])
 
@@ -211,57 +249,72 @@ def main():
     if step == "Charger les données":
         st.header("Chargement des données")
         
-        # Upload des fichiers
-        cv_file = st.file_uploader("Télécharge ton CV (PDF)", type="pdf")
-        job_offer_file = st.file_uploader("Télécharge l'offre d'emploi (TXT)", type="txt")
         
-        if st.button("Charger les fichiers"):
-            if cv_file and job_offer_file:
+        
+        # Upload des fichiers
+        cv_file = st.file_uploader("Télécharge ton CV ⬇️ (PDF)", type="pdf")
+        job_offer_file = st.file_uploader("Télécharge l'offre d'emploi ⬇️ (TXT)", type="txt")
+        # Champ pour coller l'annonce
+        job_offer_text = st.text_area(" Ou colle l'offre d'emploi ici 📋 :", height=300)
+
+        if st.button("Charger les données"):
+            if cv_file:
                 try:
-                    # Lire les fichiers uploadés
                     st.session_state.cv_data = ingest_pdf(cv_file)
-                    st.session_state.job_offer = job_offer_file.read().decode("utf-8")
-                    st.success("Les données ont été chargées avec succès.")
                 except Exception as e:
-                    st.error(f"Erreur lors du traitement des fichiers : {e}")
+                    st.error(f"Erreur lors de la lecture du CV : {e}")
+            
+            # Vérifier si l'utilisateur a collé ou uploadé l'offre
+            if job_offer_text.strip():
+                st.session_state.job_offer = job_offer_text
+            elif job_offer_file:
+                try:
+                    st.session_state.job_offer = job_offer_file.read().decode("utf-8")
+                except Exception as e:
+                    st.error(f"Erreur lors de la lecture de l'offre d'emploi : {e}")
+            
+            if st.session_state.cv_data and st.session_state.job_offer:
+                st.success("Les données ont été chargées avec succès.")
             else:
-                st.error("Veuillez télécharger un CV et une offre d'emploi.")
+                st.error("Veuillez fournir un CV et une offre d'emploi.")
 
     # Adapter le CV à l'offre
     elif step == "Adapter le CV":
         st.header("Adapter le CV à l'offre")
-        if st.button("Adapter le CV"):
-            if st.session_state.cv_data and st.session_state.job_offer:
+        if st.session_state.cv_data and st.session_state.job_offer:
+            if st.button("Adapter le CV"):
                 cv_adapte = adapter_cv_ollama(st.session_state.cv_data, st.session_state.job_offer)
                 if cv_adapte:
-                    sauvegarder_fichier(cv_adapte, "./data/CV_adapte.txt")
-                    st.success("CV adapté généré avec succès.")
-                    st.download_button(
-                        label="Télécharger le CV adapté",
-                        data=cv_adapte,
-                        file_name="./data/CV_adapte.txt",
-                        mime="text/plain"
-                    )
-            else:
-                st.error("Veuillez d'abord charger les données.")
+                    temp_filename = sauvegarder_fichier_temporaire(cv_adapte)  # Sauvegarde dans un fichier temporaire
+                    if temp_filename:
+                        st.success("CV adapté généré avec succès.")
+                        st.download_button(
+                            label="Télécharger le CV adapté",
+                            data=open(temp_filename, "r").read(),  # Lit le fichier temporaire pour le téléchargement
+                            file_name="CV_adapte.txt",
+                            mime="text/plain"
+                        )
+        else:
+            st.warning("Veuillez charger le CV et l'offre avant de continuer.")
 
     # Générer la lettre de motivation
     elif step == "Générer la lettre":
         st.header("Générer une lettre de motivation")
-        if st.button("Générer la lettre"):
-            if st.session_state.cv_data and st.session_state.job_offer:
+        if st.session_state.cv_data and st.session_state.job_offer:
+            if st.button("Générer la lettre"):
                 lettre_motivation = generer_lettre_motivation_ollama(st.session_state.cv_data, st.session_state.job_offer)
                 if lettre_motivation:
-                    sauvegarder_fichier(lettre_motivation, "./data/Lettre_motivation.txt")
-                    st.success("Lettre de motivation générée avec succès.")
-                    st.download_button(
+                    temp_filename=sauvegarder_fichier_temporaire(lettre_motivation)
+                    if temp_filename:
+                        st.success("Lettre de motivation générée avec succès.")
+                        st.download_button(
                         label="Télécharger la lettre de motivation",
-                        data=lettre_motivation,
-                        file_name="./data/Lettre_motivation.txt",
+                        data=open(temp_filename, "r").read(),
+                        file_name="Lettre_motivation.txt",
                         mime="text/plain"
                     )
-            else:
-                st.error("Veuillez d'abord charger les données.")
+        else:
+            st.warning("Veuillez charger le CV et l'offre avant de continuer.")
 
 if __name__ == "__main__":
     main()
