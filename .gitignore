@@ -1,0 +1,26 @@
+# Ignorer l'environnement virtuel (si le dossier s'appelle test_env ou autre)
+test_env/
+venv/
+ENV/
+heljob_env/
+*.env
+
+# Ignorer les fichiers Python compilés
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignorer les fichiers de configuration IDE (par exemple, VSCode, PyCharm)
+.vscode/
+.idea/
+/data/
+
+# Ignorer les fichiers log
+*.log
+
+# Ignorer les fichiers de base de données
+*.sqlite3
+
+# Ignorer les fichiers générés par le système (macOS, Windows)
+.DS_Store
+Thumbs.db
