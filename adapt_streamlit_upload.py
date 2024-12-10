@@ -2,7 +2,7 @@ import logging
 import tempfile
 import time
 import os
-from Modelfile import modelfile
+
 # Bibliothèques tierces
 import streamlit as st
 import ollama
