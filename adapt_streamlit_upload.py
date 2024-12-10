@@ -2,7 +2,7 @@ import logging
 import tempfile
 import time
 import os
-
+from Modelfile import modelfile
 # Bibliothèques tierces
 import streamlit as st
 import ollama
@@ -135,22 +135,31 @@ def sauvegarder_fichier_temporaire(contenu):
         logging.error(f"Erreur lors de la sauvegarde du fichier temporaire : {e}")
         return None
 
-# def clean_temp_file(temp_file):
-#     """Supprimer un fichier temporaire et gérer les erreurs."""
-#     try:
-#         if os.path.exists(temp_file):
-#             os.remove(temp_file)
-#             logging.info(f"Fichier temporaire supprimé : {temp_file}")
-#         else:
-#             logging.warning(f"Le fichier {temp_file} n'existe pas.")
-#     except Exception as e:
-#         logging.error(f"Erreur lors de la suppression du fichier {temp_file}: {e}")
+def clean_temp_file(temp_file):
+    """Supprimer un fichier temporaire et gérer les erreurs."""
+    try:
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
+            logging.info(f"Fichier temporaire supprimé : {temp_file}")
+        else:
+            logging.warning(f"Le fichier {temp_file} n'existe pas.")
+    except Exception as e:
+        logging.error(f"Erreur lors de la suppression du fichier {temp_file}: {e}")
 
-def afficher_animation_chargement():
-    """Afficher une animation de chargement avec Streamlit."""
+
+def afficher_animation_chargement(func, *args, **kwargs):
+    """Afficher une animation de chargement pendant l'exécution d'une fonction."""
     with st.spinner("Chargement en cours..."):
-        time.sleep(60)  # Simule un délai pour l'animation
-        
+        result = func(*args, **kwargs)  # Appelle la fonction et attend sa fin
+    return result
+
+def generate_cv_advice(prompt):
+    try:
+        response = ollama.generate(model="llama3.2", prompt=prompt)
+        return response['response']
+    except Exception as e:
+        return f"Erreur lors de la génération : {e}"
+    
     
 # Fonction principale orchestrant tout le processus
 def main():
@@ -197,17 +206,19 @@ def main():
     if "cv_data" not in st.session_state:
         st.session_state.cv_data = None
 
-    if "job_offer" not in st.session_state:
-        st.session_state.job_offer = None
+   
+    if "advice" not in st.session_state:
+        st.session_state.advice = None
 
     st.title("Heljob-AI 🤖" )
+    st.write("Ask Heljob-Bot for CV and cover letter advice!")
 
     st.text("CV Assistant ☑️")
     
     st.sidebar.title("Menu 📖")
     # Descriptif dans la barre latérale
     st.sidebar.markdown("Insère ton CV et ton offre, et laisse la magie opérer ✨")
-    step = st.sidebar.radio("Étapes", ["Charger les données", "Adapter le CV", "Générer la lettre"])
+    step = st.sidebar.radio("Étapes", ["Charger les données", "Adapter le CV", "Générer la lettre", "Demander conseil"])
 
     # Charger le CV et l'offre
     if step == "Charger les données":
@@ -247,8 +258,8 @@ def main():
         st.header("Adapter le CV à l'offre")
         if st.session_state.cv_data and st.session_state.job_offer:
             if st.button("Adapter le CV"):
-                afficher_animation_chargement()
-                cv_adapte = adapter_cv_ollama(st.session_state.cv_data, st.session_state.job_offer)
+                cv_adapte =  afficher_animation_chargement(adapter_cv_ollama, st.session_state.cv_data, st.session_state.job_offer)
+        
                 if cv_adapte:
                     temp_filename = sauvegarder_fichier_temporaire(cv_adapte)  # Sauvegarde dans un fichier temporaire
                     if temp_filename:
@@ -267,8 +278,7 @@ def main():
         st.header("Générer une lettre de motivation")
         if st.session_state.cv_data and st.session_state.job_offer:
             if st.button("Générer la lettre"):
-                afficher_animation_chargement()
-                lettre_motivation = generer_lettre_motivation_ollama(st.session_state.cv_data, st.session_state.job_offer)
+                lettre_motivation = afficher_animation_chargement( generer_lettre_motivation_ollama,st.session_state.cv_data, st.session_state.job_offer)
                 if lettre_motivation:
                     temp_filename=sauvegarder_fichier_temporaire(lettre_motivation)
                     if temp_filename:
@@ -282,7 +292,29 @@ def main():
         else:
             st.warning("Veuillez charger le CV et l'offre avant de continuer.")
 
-       
+   # Entrée utilisateur
+    elif step == "Demander conseil":
+        user_input = st.text_area("Pose ta question :", "")
+
+        if st.button("Envoyer"):
+            if user_input.strip():  # Vérifie si le prompt est non vide
+                # Génère le conseil avec animation de chargement
+                advice = afficher_animation_chargement(generate_cv_advice, user_input)
+
+                # Sauvegarde dans un fichier temporaire
+                advice_file = sauvegarder_fichier_temporaire(advice)
+
+                # Affiche le résultat et le bouton de téléchargement
+                st.info(advice)
+                st.download_button(
+                    label="Télécharger le fichier",
+                    data=open(advice_file, "r", encoding="utf-8").read(),  # Lit le fichier temporaire
+                    file_name="advice.txt",
+                    mime="text/plain"
+                )
+            else:
+                st.warning("Veuillez entrer une question avant de continuer.")
+
 
 
 if __name__ == "__main__":
