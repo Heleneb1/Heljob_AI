@@ -18,7 +18,6 @@
 
 Vous pouvez essayer l'application en ligne ici : [HelJob_AI Démo](https://heljob.streamlit.app/)
 
-
 ## 📋 Table des matières
 
 - [À propos](#-à-propos)
