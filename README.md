@@ -14,6 +14,11 @@
 
 ---
 
+## Démo en ligne
+
+Vous pouvez essayer l'application en ligne ici : [HelJob_AI Démo](https://heljob.streamlit.app/)
+
+
 ## 📋 Table des matières
 
 - [À propos](#-à-propos)
@@ -227,6 +232,10 @@ Si ce projet vous a été utile, n'hésitez pas à lui donner une ⭐ !
 # English Version
 
 > Adapt your CV and generate personalized cover letters using artificial intelligence
+
+## Demo Online
+
+You can try the online application here: [HelJob_AI Demo](https://heljob.streamlit.app/)
 
 ## 📋 Table of Contents
 
