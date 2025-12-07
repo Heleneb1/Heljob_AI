@@ -15,6 +15,7 @@ __pycache__/
 .idea/
 /data/
 .streamlit/
+notes.txt
 # Ignorer les fichiers log
 *.log
 
