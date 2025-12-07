@@ -14,13 +14,21 @@ import fitz  # Bibliothèque PyMuPDF pour lire les fichiers PDF
 # Configuration du système de journalisation pour suivre l'exécution du programme
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(levelname)s - %(message)s')
-
+# en local
 # Constantes utilisées dans le programme
-CV_PATH = os.path.abspath("./data/Cv.pdf")  # Chemin du CV
-OFFER_PATH = os.path.abspath("./data/offer.txt")  # Chemin de l'offre d'emploi
-MODEL_NAME = "llama3.2"  # Nom du modèle utilisé
-EMBEDDING_MODEL = "nomic-embed-text"  # Modèle pour les embeddings
-VECTOR_STORE_NAME = "simple-rag"  # Nom de la base de données vectorielle
+# CV_PATH = os.path.abspath("./data/Cv.pdf")  # Chemin du CV
+# OFFER_PATH = os.path.abspath("./data/offer.txt")  # Chemin de l'offre d'emploi
+# MODEL_NAME = "llama3.2"  # Nom du modèle utilisé
+# EMBEDDING_MODEL = "nomic-embed-text"  # Modèle pour les embeddings
+# VECTOR_STORE_NAME = "simple-rag"  # Nom de la base de données vectorielle
+
+# Constantes pour la version OpenAI
+CV_PATH = os.path.abspath("./data/Cv.pdf")
+OFFER_PATH = os.path.abspath("./data/offer.txt")
+MODEL_NAME = "llama3.2"
+EMBEDDING_MODEL = "text-embedding-3-small"
+VECTOR_STORE_NAME = "simple-rag"
+
 
 # Fonction pour charger un fichier PDF et l'extraire en texte
 def ingest_pdf(doc_path=CV_PATH):

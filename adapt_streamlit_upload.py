@@ -210,11 +210,8 @@ def main():
     if "advice" not in st.session_state:
         st.session_state.advice = None
 
-    st.title("Heljob-AI 🤖" )
-    st.write("Ask Heljob-Bot for CV and cover letter advice!")
-
-    st.text("CV Assistant ☑️")
-    
+    st.title("Heljob-AI ✨")
+    st.markdown("Bienvenue sur Heljob-AI ! Utilise ce bot pour adapter ton CV à une offre d'emploi ou pour obtenir des conseils personnalisés.")
     st.sidebar.title("Menu 📖")
     # Descriptif dans la barre latérale
     st.sidebar.markdown("Insère ton CV et ton offre, et laisse la magie opérer ✨")
